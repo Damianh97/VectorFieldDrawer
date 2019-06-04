@@ -33,5 +33,6 @@ struct Token
 };
 
 typedef std::vector<Token> TokenList;
+typedef std::vector<Token>::const_iterator TokenIterator;
 
 #endif
