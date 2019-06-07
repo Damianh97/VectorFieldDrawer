@@ -10,6 +10,7 @@ enum TokenType
 	TT_INTEGER,
 	TT_FLOAT,
 	TT_DOT,
+	TT_COMMA,
 	TT_OPEN_PAREN,
 	TT_CLOSE_PAREN,
 	TT_EQUAL,
@@ -17,6 +18,7 @@ enum TokenType
 	TT_SUB,
 	TT_MUL,
 	TT_DIV,
+	TT_POW,
 	TT_INVALID,
 	NUM_TOKEN_TYPES
 };

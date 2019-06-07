@@ -25,6 +25,10 @@ CharType getCharType(char c)
 	{
 		return CT_DOT;
 	}
+	else if (c == ',')
+	{
+		return CT_COMMA;
+	}
 	else if (c == '(')
 	{
 		return CT_OPEN_PAREN;
@@ -52,6 +56,10 @@ CharType getCharType(char c)
 	else if (c == '/')
 	{
 		return CT_DIV;
+	}
+	else if (c == '^')
+	{
+		return CT_POW;
 	}
 	else if (c == ' ')
 	{
@@ -81,6 +89,7 @@ Tokenizer::Tokenizer()
 	Node* num1 = newNode(TT_INTEGER);
 	Node* num2 = newNode(TT_FLOAT);
 	Node* inv2 = newNode(TT_INVALID);
+	Node* comma = newNode(TT_COMMA);
 	Node* op = newNode(TT_OPEN_PAREN);
 	Node* cp = newNode(TT_CLOSE_PAREN);
 	Node* eq = newNode(TT_EQUAL);
@@ -88,6 +97,7 @@ Tokenizer::Tokenizer()
 	Node* sub = newNode(TT_SUB);
 	Node* mul = newNode(TT_MUL);
 	Node* div = newNode(TT_DIV);
+	Node* pow = newNode(TT_POW);
 	
 	connect(m_root, CT_SPACE, m_root);
 	
@@ -101,6 +111,7 @@ Tokenizer::Tokenizer()
 	connect(inv2, CT_NUMBER, num2);
 	connect(num2, CT_NUMBER, num2);
 	
+	connect(m_root, CT_COMMA, comma);
 	connect(m_root, CT_OPEN_PAREN, op);
 	connect(m_root, CT_CLOSE_PAREN, cp);
 	connect(m_root, CT_EQUAL, eq);
@@ -108,6 +119,7 @@ Tokenizer::Tokenizer()
 	connect(m_root, CT_SUB, sub);
 	connect(m_root, CT_MUL, mul);
 	connect(m_root, CT_DIV, div);
+	connect(m_root, CT_POW, pow);
 }
 
 Tokenizer::~Tokenizer()

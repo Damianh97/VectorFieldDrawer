@@ -17,6 +17,10 @@ set(
     "src/Interface/Tokenizer.cpp"
 )
 
-add_executable(visualizer ${SRCFILES})
-set_target_properties(visualizer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
-target_compile_options(visualizer PRIVATE ${COMMON_COMPILE_OPTIONS})
+# add_executable(visualizer ${SRCFILES})
+# set_target_properties(visualizer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
+# target_compile_options(visualizer PRIVATE ${COMMON_COMPILE_OPTIONS})
+
+add_executable(test-expression "test/TestExpression.cpp" "src/Interface/Tokenizer.cpp" "src/Interface/Expression.cpp")
+set_target_properties(test-expression PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
+target_compile_options(test-expression PRIVATE ${COMMON_COMPILE_OPTIONS})

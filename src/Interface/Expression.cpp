@@ -1,10 +1,35 @@
 #include "Expression.h"
+#include <stack>
+
+namespace
+{
+
+unsigned int binOpPrecedence(char op)
+{
+	switch (op)
+	{
+		case '^':
+			return 0;
+		case '*':
+			return 1;
+		case '/':
+			return 2;
+		case '-':
+		case '+':
+			return 3;
+		default:
+			//Will never happen
+			return 0;
+	}
+}
+
+}
 
 ExpressionParser::ExpressionParser(TokenIterator first, TokenIterator last) :
 	m_first(first),
 	m_last(last),
 	m_parens(last - first, last),
-	m_actualPos(first),
+	m_actualPos(first)
 {
 	//We start finding corresponding closing parenthesis for each opening parenthesis
 	std::stack<std::size_t> openParens; //Positions of opening parentheses not yet closed
@@ -24,7 +49,7 @@ ExpressionParser::ExpressionParser(TokenIterator first, TokenIterator last) :
 			}
 			else
 			{
-				marks[openParens.top()] = it;
+				m_parens[openParens.top()] = it;
 				openParens.pop();
 			}
 		}
@@ -34,11 +59,6 @@ ExpressionParser::ExpressionParser(TokenIterator first, TokenIterator last) :
 	{
 		m_errorStream << "missing expected ')' in expression.";
 		return;
-	}
-	
-	if (lastComma != last - first)
-	{
-		marks[lastComma] = std::make_pair(2, last);
 	}
 }
 
@@ -51,6 +71,7 @@ std::string ExpressionParser::errorMsg()
 {
 	std::string msg = m_errorStream.str();
 	std::ostringstream().swap(m_errorStream);
+	return msg;
 }
 	
 ExpressionPtr ExpressionParser::parse(TokenIterator limit)
@@ -111,17 +132,15 @@ ExpressionPtr ExpressionParser::parseNonBinary(TokenIterator limit)
 			{
 				TokenIterator closingParen = m_parens[m_actualPos - m_first];
 				++m_actualPos;
-				ExpressionPtr expr(new Evaluation);
-				expr->name = name;
-				parseCommaSeparated(closingParen, name->args);
+				EvaluationExpression* evalExp = new EvaluationExpression;
+				evalExp->funcName = name;
+				parseCommaSeparated(closingParen, evalExp->args);
 				++m_actualPos;
-				return expr;
+				return ExpressionPtr(evalExp);
 			}
 			else
 			{
-				ExpressionPtr expr(new Variable);
-				expr->name = name;
-				return expr;
+				return ExpressionPtr(new VarExpression(name));
 			}
 		}
 		
@@ -129,17 +148,17 @@ ExpressionPtr ExpressionParser::parseNonBinary(TokenIterator limit)
 		{
 			TokenIterator closingParen = m_parens[m_actualPos - m_first];
 			++m_actualPos;
-			ExpressionPtr expr(parse(closingParen));
+			ExpressionPtr exp(parse(closingParen));
 			++m_actualPos;
-			return expr:
+			return exp;
 		}
 	
 		case TT_INTEGER:
 		case TT_FLOAT:
 		{
-			ExpressionPtr expr(new Constant);
-			expr->value = std::stof(m_actualPos->str);
-			return expr:
+			ConstExpression* constExp = new ConstExpression(std::stof(m_actualPos->str));
+			++m_actualPos;
+			return ExpressionPtr(constExp);
 		}
 		
 		case TT_ADD:
@@ -147,10 +166,11 @@ ExpressionPtr ExpressionParser::parseNonBinary(TokenIterator limit)
 			return parse(limit);
 		
 		case TT_SUB:
-			ExpressionPtr expr(new Negation);
+		{
 			++m_actualPos;
-			expr->operand = parse(limit);
-			return expr;
+			UnaryMinusExpression* uminExp = new UnaryMinusExpression(parse(limit));
+			return ExpressionPtr(uminExp);
+		}
 			
 		default:
 			m_errorStream << "expected non binary expression.";
@@ -175,31 +195,31 @@ void ExpressionParser::parseCommaSeparated(TokenIterator limit, std::vector<Expr
 	if (exprs.back() == nullptr) return;
 }
 
-ExpressionPtr ExpressionParser::makeTree(const std::vector<ExpressionPtr>& nodes, std::size_t start, std::size_t end)
+ExpressionPtr ExpressionParser::makeTree(std::vector<ExpressionPtr>& nodes, std::size_t start, std::size_t end)
 {
 	if (end - start == 1)
 	{
-		return nodes[start];
+		return std::move(nodes[start]);
 	}
 	else
 	{
 		std::size_t mostPrecedent = start + 1;
-		unsigned int maxPrecedence = binOpPrecedences[static_cast<const BinaryExpression*>(nodes[mostPrecedent].get())->op];
+		unsigned int maxPrecedence = binOpPrecedence(static_cast<const BinaryExpression*>(nodes[mostPrecedent].get())->op);
 		
 		for (unsigned i = mostPrecedent + 2; i < end; i += 2)
 		{
 			const BinaryExpression* actual = static_cast<const BinaryExpression*>(nodes[i].get());
-			if (binOpPrecedences[actual->op] >= maxPrecedence)
+			if (binOpPrecedence(actual->op) >= maxPrecedence)
 			{
-				maxPrecedence = binOpPrecedences[actual->op];
+				maxPrecedence = binOpPrecedence(actual->op);
 				mostPrecedent = i;
 			}
 		}
 		
 		BinaryExpression* root = static_cast<BinaryExpression*>(nodes[mostPrecedent].get());
-		root->leftOperand = makeTree(nodes, start, mostPrecedent);
-		root->rightOperand = makeTree(nodes, mostPrecedent + 1, end);
+		root->left = makeTree(nodes, start, mostPrecedent);
+		root->right = makeTree(nodes, mostPrecedent + 1, end);
 		
-		return nodes[mostPrecedent];
+		return std::move(nodes[mostPrecedent]);
 	}
 }

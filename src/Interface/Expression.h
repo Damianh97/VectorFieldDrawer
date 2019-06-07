@@ -3,13 +3,10 @@
 
 #include <memory>
 #include <string>
-#include <stringstream>
+#include <sstream>
 #include <vector>
 
 #include "Token.h"
-
-class Expression;
-typedef std::unique_ptr<Expresion> ExpresionPtr;
 
 class ExpressionVisitor;
 
@@ -20,6 +17,25 @@ public:
 	virtual void accept(ExpressionVisitor& v) = 0;
 };
 
+typedef std::unique_ptr<Expression> ExpressionPtr;
+
+class BinaryExpression;
+class ConstExpression;
+class VarExpression;
+class EvaluationExpression;
+class UnaryMinusExpression;
+
+class ExpressionVisitor
+{
+public:
+	virtual void visit(BinaryExpression& e) = 0;
+	virtual void visit(ConstExpression& e) = 0;
+	virtual void visit(VarExpression& e) = 0;
+	virtual void visit(EvaluationExpression& e) = 0;
+	virtual void visit(UnaryMinusExpression& e) = 0;
+};
+
+/*----------Derived expression types----------*/
 
 class BinaryExpression : public Expression
 {
@@ -74,7 +90,7 @@ public:
 class UnaryMinusExpression : public Expression
 {
 public:
-	UnaryMinusExpression(ExpressionPtr arg): arg(arg) {}
+	UnaryMinusExpression(ExpressionPtr arg): arg(std::move(arg)) {}
 	virtual void accept(ExpressionVisitor& v)
 	{
 		v.visit(*this);
@@ -82,18 +98,6 @@ public:
 public:
 	ExpressionPtr arg;
 };
-
-
-class ExpressionVisitor
-{
-public:
-	virtual void visit(BinaryExpression& e) = 0;
-	virtual void visit(ConstExpression& e) = 0;
-	virtual void visit(VarExpression& e) = 0;
-	virtual void visit(EvaluationExpression& e) = 0;
-	virtual void visit(UnaryMinusExpression& e) = 0;
-};
-
 
 // An object used to parse a mathematical expressions
 class ExpressionParser
@@ -108,25 +112,26 @@ public:
 	
 private:
 	// Parses from m_actualPos up to limit
-	ExpressionPtr parse(TokenIterator limit)
+	ExpressionPtr parse(TokenIterator limit);
 	// Parses a non binary expression starting from m_actualPos,
-	ExpressionPtr parseNonBinary(TokenIterator limit)
+	ExpressionPtr parseNonBinary(TokenIterator limit);
 	// Parses from m_actualPos up to limit several comma-separated expressions
-	void parseCommaSeparated(TokenIterator limit, std::vector<ExpressionPtr>& exprs)
-	// Receives an array of expressions where even positions contain non binary expressions
-	// and odd positions contain binary expressions with undefined operands. Converts the 
-	// range [start, end) of the array into a tree (i.e. an expression) respecting the 
-	// precedences of the binary operators.
-	//
-	// Example: nodes = ["x", "*", "y", "+", "y", "^", "2"]
-	// Output:
-	//         _+_
-	//        /   \
-	//       *     ^
-	//      / \   / \
-	//     x  y  y   2
-	//
-	ExpressionPtr makeTree(const std::vector<ExpressionPtr>& nodes, std::size_t start, std::size_t end);
+	void parseCommaSeparated(TokenIterator limit, std::vector<ExpressionPtr>& exprs);
+	/* Receives an array of expressions where even positions contain non binary expressions
+	 * and odd positions contain binary expressions with undefined operands. Converts the 
+	 * range [start, end) of the array into a tree (i.e. an expression) respecting the 
+	 * precedences of the binary operators.
+	 *
+	 * Example: nodes = ["x", "*", "y", "+", "y", "^", "2"]
+	 * Output:
+	 *         _+_
+	 *        /   \
+	 *       *     ^
+	 *      / \   / \
+	 *     x  y  y   2
+	 *
+	 * The array is modified because the pointers are moved. */
+	ExpressionPtr makeTree(std::vector<ExpressionPtr>& nodes, std::size_t start, std::size_t end);
 	
 private:
 	TokenIterator m_first; // Iterators received when constructed. Determine the range of tokens being parsed
