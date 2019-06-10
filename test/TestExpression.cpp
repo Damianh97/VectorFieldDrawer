@@ -35,12 +35,16 @@ private:
 
 int main()
 {
-	Tokenizer tkzer;
-	TokenList tokenized_example = tkzer.tokenize("2*x + 5*(y - H(u,v))");
+	std::string example = "2^x + 5.3*(y - H(t1,t2,t3)/2)";
+	std::cout << "Expression: " << example << std::endl;
 	
-	ExpressionParser parser(tokenized_example.begin(), tokenized_example.end());
+	Tokenizer tkzer;
+	TokenList tokenized = tkzer.tokenize(example);
+	ExpressionParser parser(tokenized.begin(), tokenized.end());
 	ExpressionPtr result = parser.parse();
 	
+	std::cout << "Parsed expression in prefix notation: ";
 	ExpressionPrinter printer;
 	result->accept(printer);
+	std::cout << std::endl;
 }
